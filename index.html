@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scientific Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 20px;
+        }
+
+        .calculator {
+            background: #2d2d2d;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            width: 420px;
+        }
+
+        .display {
+            background: #1a1a1a;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            text-align: right;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            border: 2px solid #3a3a3a;
+        }
+
+        .mode-indicator {
+            color: #4CAF50;
+            font-size: 12px;
+            text-align: left;
+            margin-bottom: 5px;
+        }
+
+        .previous-operand {
+            color: #888;
+            font-size: 14px;
+            min-height: 18px;
+            word-wrap: break-word;
+        }
+
+        .current-operand {
+            color: #00ff00;
+            font-size: 32px;
+            font-weight: bold;
+            word-wrap: break-word;
+            font-family: 'Courier New', monospace;
+        }
+
+        .digit-counter {
+            color: #ff6b6b;
+            font-size: 11px;
+            margin-top: 5px;
+            text-align: left;
+        }
+
+        .warning-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #ff6b6b;
+            color: white;
+            padding: 20px 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            font-size: 18px;
+            font-weight: bold;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translate(-50%, -60%);
+                opacity: 0;
+            }
+            to {
+                transform: translate(-50%, -50%);
+                opacity: 1;
+            }
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        button {
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            padding: 15px 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+            color: white;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            filter: brightness(1.2);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .number {
+            background: #4a4a4a;
+        }
+
+        .operator {
+            background: #ff9500;
+        }
+
+        .function {
+            background: #5a5a5a;
+            font-size: 14px;
+        }
+
+        .equals {
+            background: #4CAF50;
+            grid-column: span 2;
+        }
+
+        .clear {
+            background: #f44336;
+        }
+
+        .delete {
+            background: #ff6b6b;
+        }
+
+        .mode-toggle {
+            background: #2196F3;
+            font-size: 13px;
+        }
+
+        .wide {
+            grid-column: span 2;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="display">
+            <div class="mode-indicator" id="modeIndicator">DEG</div>
+            <div class="previous-operand" id="previousOperand"></div>
+            <div class="current-operand" id="currentOperand">0</div>
+            <div class="digit-counter" id="digitCounter"></div>
+        </div>
+        <div class="buttons">
+            <button class="mode-toggle" onclick="toggleMode()">DEG/RAD</button>
+            <button class="function" onclick="insertFunction('Math.PI')">π</button>
+            <button class="function" onclick="insertFunction('Math.E')">e</button>
+            <button class="clear" onclick="clearCalculator()">AC</button>
+            <button class="delete" onclick="deleteNumber()">DEL</button>
+
+            <button class="function" onclick="insertFunction('sin(')">sin</button>
+            <button class="function" onclick="insertFunction('cos(')">cos</button>
+            <button class="function" onclick="insertFunction('tan(')">tan</button>
+            
+
+            <button class="function" onclick="insertFunction('asin(')">sin⁻¹</button>
+            <button class="function" onclick="insertFunction('acos(')">cos⁻¹</button>
+            <button class="function" onclick="insertFunction('atan(')">tan⁻¹</button>
+            <button class="function" onclick="applyFunction('square')">x²</button>
+            <button class="function" onclick="applyFunction('sqrt')">√</button>
+
+            <button class="function" onclick="applyFunction('log')">log</button>
+            <button class="function" onclick="applyFunction('ln')">ln</button>
+            <button class="function" onclick="insertFunction('^')">xʸ</button>
+            <button class="operator" onclick="chooseOperation('÷')">÷</button>
+            <button class="operator" onclick="chooseOperation('×')">×</button>
+
+            <button class="number" onclick="appendNumber('7')">7</button>
+            <button class="number" onclick="appendNumber('8')">8</button>
+            <button class="number" onclick="appendNumber('9')">9</button>
+            <button class="operator" onclick="chooseOperation('-')">-</button>
+            <button class="operator" onclick="chooseOperation('+')">+</button>
+
+            <button class="number" onclick="appendNumber('4')">4</button>
+            <button class="number" onclick="appendNumber('5')">5</button>
+            <button class="number" onclick="appendNumber('6')">6</button>
+            <button class="function" onclick="applyFunction('factorial')">x!</button>
+            <button class="function" onclick="applyFunction('reciprocal')">1/x</button>
+
+            <button class="number" onclick="appendNumber('1')">1</button>
+            <button class="number" onclick="appendNumber('2')">2</button>
+            <button class="number" onclick="appendNumber('3')">3</button>
+            <button class="function" onclick="applyFunction('percent')">%</button>
+            <button class="function" onclick="applyFunction('negate')">+/-</button>
+
+            <button class="number wide" onclick="appendNumber('0')">0</button>
+            <button class="number" onclick="appendNumber('.')">.</button>
+            <button class="equals wide" onclick="calculate()">=</button>
+        </div>
+    </div>
+
+    <script>
+        let currentOperand = '0';
+        let previousOperand = '';
+        let operation = null;
+        let angleMode = 'DEG';
+        const MAX_DIGITS = 9;
+
+        function showWarning(message) {
+            const existingWarning = document.querySelector('.warning-popup');
+            if (existingWarning) {
+                existingWarning.remove();
+            }
+
+            const warning = document.createElement('div');
+            warning.className = 'warning-popup';
+            warning.textContent = message;
+            document.body.appendChild(warning);
+            
+            setTimeout(() => {
+                warning.remove();
+            }, 2000);
+        }
+
+        function updateDisplay() {
+            document.getElementById('currentOperand').textContent = currentOperand;
+            document.getElementById('previousOperand').textContent = previousOperand;
+            document.getElementById('modeIndicator').textContent = angleMode;
+            
+            const digitCount = currentOperand.replace(/[^0-9]/g, '').length;
+            if (digitCount >= MAX_DIGITS) {
+                document.getElementById('digitCounter').textContent = `Digits: ${digitCount}/${MAX_DIGITS}`;
+            } else {
+                document.getElementById('digitCounter').textContent = '';
+            }
+        }
+
+        function countDigits(str) {
+            return str.replace(/[^0-9]/g, '').length;
+        }
+
+        function appendNumber(number) {
+            if (number === '.' && currentOperand.includes('.')) return;
+            
+            if (number !== '.') {
+                if (countDigits(currentOperand) >= MAX_DIGITS) {
+                    showWarning('Maximum 9 digits allowed!');
+                    return;
+                }
+            }
+            
+            if (currentOperand === '0' && number !== '.') {
+                currentOperand = number;
+            } else {
+                currentOperand += number;
+            }
+            updateDisplay();
+        }
+
+        function chooseOperation(op) {
+            if (currentOperand === '') return;
+            if (previousOperand !== '') {
+                calculate();
+            }
+            operation = op;
+            previousOperand = currentOperand + ' ' + op;
+            currentOperand = '';
+            updateDisplay();
+        }
+
+        function toRadians(degrees) {
+            return degrees * (Math.PI / 180);
+        }
+
+        function toDegrees(radians) {
+            return radians * (180 / Math.PI);
+        }
+
+        function applyFunction(func) {
+            const num = parseFloat(currentOperand);
+            if (isNaN(num)) return;
+            
+            let result;
+            switch(func) {
+                case 'square':
+                    result = num * num;
+                    break;
+                case 'sqrt':
+                    if (num < 0) {
+                        alert('Cannot calculate square root of negative number');
+                        return;
+                    }
+                    result = Math.sqrt(num);
+                    break;
+                case 'log':
+                    if (num <= 0) {
+                        alert('Cannot calculate log of non-positive number');
+                        return;
+                    }
+                    result = Math.log10(num);
+                    break;
+                case 'ln':
+                    if (num <= 0) {
+                        alert('Cannot calculate ln of non-positive number');
+                        return;
+                    }
+                    result = Math.log(num);
+                    break;
+                case 'factorial':
+                    if (num < 0 || !Number.isInteger(num)) {
+                        alert('Factorial only works with non-negative integers');
+                        return;
+                    }
+                    result = factorial(num);
+                    break;
+                case 'reciprocal':
+                    if (num === 0) {
+                        alert('Cannot divide by zero');
+                        return;
+                    }
+                    result = 1 / num;
+                    break;
+                case 'percent':
+                    result = num / 100;
+                    break;
+                case 'negate':
+                    result = -num;
+                    break;
+            }
+            
+            currentOperand = formatResult(result);
+            updateDisplay();
+        }
+
+        function factorial(n) {
+            if (n === 0 || n === 1) return 1;
+            let result = 1;
+            for (let i = 2; i <= n; i++) {
+                result *= i;
+            }
+            return result;
+        }
+
+        function insertFunction(func) {
+            if (func === 'Math.PI') {
+                currentOperand = Math.PI.toString();
+            } else if (func === 'Math.E') {
+                currentOperand = Math.E.toString();
+            } else {
+                currentOperand += func;
+            }
+            updateDisplay();
+        }
+
+        function evaluateExpression(expr) {
+            expr = expr.replace(/sin\(/g, angleMode === 'DEG' ? 'Math.sin(toRadians(' : 'Math.sin(');
+            expr = expr.replace(/cos\(/g, angleMode === 'DEG' ? 'Math.cos(toRadians(' : 'Math.cos(');
+            expr = expr.replace(/tan\(/g, angleMode === 'DEG' ? 'Math.tan(toRadians(' : 'Math.tan(');
+            expr = expr.replace(/asin\(/g, angleMode === 'DEG' ? 'toDegrees(Math.asin(' : 'Math.asin(');
+            expr = expr.replace(/acos\(/g, angleMode === 'DEG' ? 'toDegrees(Math.acos(' : 'Math.acos(');
+            expr = expr.replace(/atan\(/g, angleMode === 'DEG' ? 'toDegrees(Math.atan(' : 'Math.atan(');
+            expr = expr.replace(/\^/g, '**');
+            
+            if (angleMode === 'DEG') {
+                const sinCount = (expr.match(/Math\.sin/g) || []).length;
+                const cosCount = (expr.match(/Math\.cos/g) || []).length;
+                const tanCount = (expr.match(/Math\.tan/g) || []).length;
+                const asinCount = (expr.match(/Math\.asin/g) || []).length;
+                const acosCount = (expr.match(/Math\.acos/g) || []).length;
+                const atanCount = (expr.match(/Math\.atan/g) || []).length;
+                
+                expr += ')'.repeat(sinCount + cosCount + tanCount + asinCount + acosCount + atanCount);
+            }
+            
+            return eval(expr);
+        }
+
+        function calculate() {
+            let result;
+            
+            if (operation) {
+                const prev = parseFloat(previousOperand);
+                const current = parseFloat(currentOperand);
+                
+                if (isNaN(prev) || isNaN(current)) return;
+                
+                switch (operation) {
+                    case '+':
+                        result = prev + current;
+                        break;
+                    case '-':
+                        result = prev - current;
+                        break;
+                    case '×':
+                        result = prev * current;
+                        break;
+                    case '÷':
+                        if (current === 0) {
+                            alert('Cannot divide by zero');
+                            clearCalculator();
+                            return;
+                        }
+                        result = prev / current;
+                        break;
+                }
+            } else {
+                try {
+                    result = evaluateExpression(currentOperand);
+                } catch (error) {
+                    alert('Invalid expression');
+                    return;
+                }
+            }
+            
+            currentOperand = formatResult(result);
+            operation = null;
+            previousOperand = '';
+            updateDisplay();
+        }
+
+        function formatResult(num) {
+            if (isNaN(num) || !isFinite(num)) {
+                return 'Error';
+            }
+            
+            let str = num.toString();
+            
+            // Remove decimal point and scientific notation for digit counting
+            let digitCount = str.replace(/[^0-9]/g, '').length;
+            
+            // If result has more than 9 digits
+            if (digitCount > MAX_DIGITS) {
+                showWarning('Result exceeds 9 digits! Rounded.');
+                
+                // Convert to exponential or round to fit
+                if (Math.abs(num) >= 1000000000 || (Math.abs(num) < 0.001 && num !== 0)) {
+                    return num.toExponential(5);
+                } else {
+                    // Round to fit within 9 digits
+                    let rounded = Math.round(num);
+                    let roundedStr = rounded.toString();
+                    if (roundedStr.replace(/[^0-9]/g, '').length > MAX_DIGITS) {
+                        return num.toExponential(5);
+                    }
+                    return roundedStr;
+                }
+            }
+            
+            // Format normally if within limit
+            if (str.length > 12) {
+                return num.toExponential(6);
+            }
+            return str;
+        }
+
+        function clearCalculator() {
+            currentOperand = '0';
+            previousOperand = '';
+            operation = null;
+            updateDisplay();
+        }
+
+        function deleteNumber() {
+            if (currentOperand.length === 1) {
+                currentOperand = '0';
+            } else {
+                currentOperand = currentOperand.slice(0, -1);
+            }
+            updateDisplay();
+        }
+
+        function toggleMode() {
+            angleMode = angleMode === 'DEG' ? 'RAD' : 'DEG';
+            updateDisplay();
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key >= '0' && e.key <= '9') {
+                appendNumber(e.key);
+            } else if (e.key === '.') {
+                appendNumber(e.key);
+            } else if (e.key === '+' || e.key === '-') {
+                chooseOperation(e.key);
+            } else if (e.key === '*') {
+                chooseOperation('×');
+            } else if (e.key === '/') {
+                e.preventDefault();
+                chooseOperation('÷');
+            } else if (e.key === 'Enter' || e.key === '=') {
+                calculate();
+            } else if (e.key === 'Escape') {
+                clearCalculator();
+            } else if (e.key === 'Backspace') {
+                deleteNumber();
+            }
+        });
+
+        updateDisplay();
+    </script>
+</body>
+</html>
